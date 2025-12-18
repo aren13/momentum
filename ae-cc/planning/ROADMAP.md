@@ -48,12 +48,12 @@ class WorktreeManager {
 **Why:** This is the killer feature that enables massive throughput. Move from simulated parallelism to real multi-process execution.
 
 **Deliverables:**
-- [ ] `AgentPool` manager for spawning/managing agents
-- [ ] Process isolation per agent (each in own worktree)
-- [ ] Task queue with dependency resolution
-- [ ] Agent health monitoring and restart
-- [ ] Configurable concurrency (1-12 agents)
-- [ ] Progress aggregation across agents
+- [x] `AgentPool` manager for spawning/managing agents
+- [x] Process isolation per agent (each in own worktree)
+- [x] Task queue with dependency resolution
+- [x] Agent health monitoring and restart
+- [x] Configurable concurrency (1-12 agents)
+- [x] Progress aggregation across agents
 
 **Technical Approach:**
 ```javascript
@@ -316,7 +316,7 @@ Phase 8: Ideation     ──────┘
 | Phase | Status | Complexity | Plans |
 |-------|--------|------------|-------|
 | 1. Git Worktrees | 🔄 In Progress | Medium | 1/2 |
-| 2. Multi-Agent | ⏳ Pending | High | 0/3 |
+| 2. Multi-Agent | 🔄 In Progress | High | 1/3 |
 | 3. QA Loop | ⏳ Pending | Medium | 0/2 |
 | 4. Memory System | ⏳ Pending | Medium | 0/2 |
 | 5. Merge Resolution | ⏳ Pending | High | 0/2 |

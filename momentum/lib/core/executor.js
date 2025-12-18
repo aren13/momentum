@@ -418,20 +418,44 @@ export class PlanExecutor {
   async executeParallel(plan, config) {
     divider('Parallel Execution');
 
-    // Group tasks by dependency level
-    const levels = this.groupByDependencyLevel(plan.tasks);
+    const { AgentPool } = await import('./agent-pool.js');
+    const pool = new AgentPool({
+      maxAgents: config.features?.maxAgents || 4
+    });
 
-    for (let level = 0; level < levels.length; level++) {
-      const levelTasks = levels[level];
-      info(`Executing level ${level + 1} (${levelTasks.length} tasks in parallel)`);
+    await pool.init(this.dir);
 
-      const promises = levelTasks.map(task => this.executeTask(task, config));
-      await Promise.allSettled(promises);
+    // Convert tasks to agent tasks
+    const agentTasks = plan.tasks.map(task => ({
+      id: task.id,
+      name: task.name,
+      prompt: this.buildTaskPrompt(task, plan)
+    }));
 
-      // Update status
-      for (const task of levelTasks) {
-        taskStatus(task.name, task.status);
-      }
+    // Subscribe to events
+    pool.on('agent:spawn', ({ taskId }) => {
+      info(`Agent spawned: ${taskId}`);
+    });
+
+    pool.on('agent:complete', ({ taskId, code }) => {
+      const status = code === 0 ? 'completed' : 'failed';
+      taskStatus(taskId, status);
+    });
+
+    // Execute all
+    const results = await pool.distribute(agentTasks);
+
+    // Merge successful results
+    const mergeResults = await pool.mergeAll();
+
+    // Cleanup
+    await pool.cleanup();
+
+    // Update task statuses
+    for (const task of plan.tasks) {
+      const result = results[task.id];
+      task.status = result?.success ? 'completed' : 'failed';
+      task.error = result?.error;
     }
   }
 
@@ -503,6 +527,28 @@ export class PlanExecutor {
     });
 
     return { success: true };
+  }
+
+  /**
+   * Build prompt for agent
+   */
+  buildTaskPrompt(task, plan) {
+    return `
+## Task: ${task.name}
+
+${task.description}
+
+### Files to modify:
+${task.files.join('\n')}
+
+### Context:
+${plan.context}
+
+### Verification:
+${task.verification}
+
+Execute this task. Commit changes when complete.
+`;
   }
 
   /**
