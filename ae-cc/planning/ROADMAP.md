@@ -195,12 +195,12 @@ class MergeResolver {
 **Why:** Better specs = better code. Auto-Claude's 3-8 substep spec process produces higher quality requirements.
 
 **Deliverables:**
-- [ ] Discovery phase (understand existing code)
-- [ ] Requirements gathering (structured questions)
-- [ ] Research phase (technical feasibility)
-- [ ] Context discovery (relevant files)
-- [ ] Spec generation with critic review
-- [ ] Planning with dependency mapping
+- [x] Discovery phase (understand existing code)
+- [x] Requirements gathering (structured questions)
+- [x] Research phase (technical feasibility)
+- [x] Context discovery (relevant files)
+- [x] Spec generation with critic review
+- [x] Planning with dependency mapping
 
 **Integration:**
 - Runs before phase planning
@@ -324,7 +324,7 @@ Phase 8: Ideation     ──────┘
 | 3. QA Loop | ✅ Complete | Medium | 2/2 |
 | 4. Memory System | ✅ Complete | Medium | 2/2 |
 | 5. Merge Resolution | ✅ Complete | High | 2/2 |
-| 6. Spec Engine | ⏳ Pending | Medium | 0/2 |
+| 6. Spec Engine | ✅ Complete | Medium | 2/2 |
 | 7. Electron GUI | 🔄 In Progress | High | 1/4 |
 | 8. Ideation | ✅ Complete | Low | 1/1 |
 
