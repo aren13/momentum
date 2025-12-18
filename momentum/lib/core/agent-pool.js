@@ -85,11 +85,29 @@ export class AgentPool extends EventEmitter {
       agent.endTime = Date.now();
       agent.exitCode = code;
 
+      // Run QA if enabled and agent succeeded
+      if (code === 0 && task.config?.features?.autoQA) {
+        const { QARunner } = await import('./qa-runner.js');
+        const qa = new QARunner({
+          workDir: worktree.path,
+          maxIterations: task.config?.features?.qaIterations || 10
+        });
+
+        const qaResult = await qa.loop();
+        agent.qaResult = qaResult;
+
+        if (!qaResult.success) {
+          agent.status = 'qa_failed';
+          this.emit('agent:qa_failed', { taskId, qaResult });
+        }
+      }
+
       this.results.set(taskId, {
         success: code === 0,
         output: agent.output.join(''),
         duration: agent.endTime - agent.startTime,
-        worktree: worktree.path
+        worktree: worktree.path,
+        qaResult: agent.qaResult
       });
 
       this.emit('agent:complete', { taskId, code, agent });

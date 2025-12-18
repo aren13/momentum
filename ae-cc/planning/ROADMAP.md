@@ -86,12 +86,12 @@ class AgentPool {
 **Why:** Catches issues before human review, reduces iteration time, improves code quality automatically.
 
 **Deliverables:**
-- [ ] `QARunner` class with configurable checks
-- [ ] Lint/type-check/test execution
-- [ ] Failure analysis and auto-fix attempts
-- [ ] Configurable iteration limit (default: 10)
-- [ ] Summary report with fix history
-- [ ] Integration with executor flow
+- [x] `QARunner` class with configurable checks
+- [x] Lint/type-check/test execution
+- [x] Failure analysis and auto-fix attempts
+- [x] Configurable iteration limit (default: 10)
+- [x] Summary report with fix history
+- [x] Integration with executor flow
 
 **Technical Approach:**
 ```javascript
@@ -317,7 +317,7 @@ Phase 8: Ideation     ──────┘
 |-------|--------|------------|-------|
 | 1. Git Worktrees | 🔄 In Progress | Medium | 1/2 |
 | 2. Multi-Agent | 🔄 In Progress | High | 1/3 |
-| 3. QA Loop | ⏳ Pending | Medium | 0/2 |
+| 3. QA Loop | 🔄 In Progress | Medium | 1/2 |
 | 4. Memory System | ⏳ Pending | Medium | 0/2 |
 | 5. Merge Resolution | ⏳ Pending | High | 0/2 |
 | 6. Spec Engine | ⏳ Pending | Medium | 0/2 |

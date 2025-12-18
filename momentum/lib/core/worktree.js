@@ -92,7 +92,7 @@ export class WorktreeManager {
   /**
    * Merge worktree back to target branch
    */
-  async merge(name, target = 'main') {
+  async merge(name, target = 'main', options = {}) {
     const worktreePath = join(this.worktreesDir, name);
     const branchName = `worktree/${name}`;
 
@@ -104,6 +104,18 @@ export class WorktreeManager {
 
     if (status.trim()) {
       throw new Error(`Worktree has uncommitted changes: ${name}`);
+    }
+
+    // Run QA before merge
+    if (options.qaRequired !== false) {
+      const { QARunner } = await import('./qa-runner.js');
+
+      const qa = new QARunner({ workDir: worktreePath });
+      const qaResult = await qa.run();
+
+      if (!qaResult.passed) {
+        throw new Error(`QA failed in worktree ${name}. Fix issues before merging.`);
+      }
     }
 
     // Switch to target and merge
