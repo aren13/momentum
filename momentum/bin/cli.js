@@ -207,6 +207,52 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// IDEATION & CODE ANALYSIS
+// ═══════════════════════════════════════════════════════════════════════════
+
+program
+  .command('ideate')
+  .description('AI-powered codebase analysis and improvement suggestions')
+  .option('--focus <area>', 'Focus on specific area (security, performance, docs, debt)')
+  .option('--output <path>', 'Output path for report (default: INSIGHTS.md)')
+  .option('--format <type>', 'Output format (markdown, json)', 'markdown')
+  .option('--path <dir>', 'Project path to analyze (default: current directory)')
+  .option('--max-files <n>', 'Maximum files to analyze', '1000')
+  .action(async (options) => {
+    const { ideate } = await import('../commands/ideation.js');
+    await ideate(options);
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SPECIFICATION ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+const specCommand = program
+  .command('spec')
+  .description('Enhanced specification generation with discovery and critique');
+
+specCommand
+  .command('discover <feature>')
+  .description('Discover context and gather requirements for a feature')
+  .option('--no-interactive', 'Skip interactive Q&A')
+  .option('-o, --output <path>', 'Output directory for discovery file')
+  .action(async (feature, options) => {
+    const { discover } = await import('../commands/spec.js');
+    await discover(feature, options);
+  });
+
+specCommand
+  .command('generate')
+  .description('Generate specification with critic review')
+  .option('-i, --input <file>', 'Input discovery file (default: DISCOVERY.md)')
+  .option('-o, --output <file>', 'Output spec file (default: SPEC.md)')
+  .option('--iterations <n>', 'Max critique iterations', '3')
+  .action(async (options) => {
+    const { generate } = await import('../commands/spec.js');
+    await generate(options);
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════
 // MEMORY SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════
 
