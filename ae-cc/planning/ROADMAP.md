@@ -163,11 +163,12 @@ files(id, path, last_analyzed, summary_hash)
 **Why:** When multiple agents modify overlapping files, manual conflict resolution is painful.
 
 **Deliverables:**
-- [ ] Three-tier resolution (auto → conflict-only → full-file)
-- [ ] Context-aware conflict analysis
-- [ ] Parallel conflict processing
-- [ ] Conflict preview before merge
-- [ ] Manual override option
+- [x] Three-tier resolution (auto → conflict-only → full-file)
+- [x] Context-aware conflict analysis
+- [x] Conflict preview before merge
+- [x] Manual override option
+- [x] AI-powered resolution with validation
+- [x] Statistics tracking and conflict queue
 
 **Technical Approach:**
 ```javascript
@@ -322,7 +323,7 @@ Phase 8: Ideation     ──────┘
 | 2. Multi-Agent | ✅ Complete | High | 3/3 |
 | 3. QA Loop | ✅ Complete | Medium | 2/2 |
 | 4. Memory System | ✅ Complete | Medium | 2/2 |
-| 5. Merge Resolution | ⏳ Pending | High | 0/2 |
+| 5. Merge Resolution | ✅ Complete | High | 2/2 |
 | 6. Spec Engine | ⏳ Pending | Medium | 0/2 |
 | 7. Electron GUI | 🔄 In Progress | High | 1/4 |
 | 8. Ideation | ⏳ Pending | Low | 0/1 |
