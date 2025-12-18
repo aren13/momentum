@@ -1,5 +1,32 @@
-# ae-cc directory (but track planning files)
-ae-cc/*
-!ae-cc/planning/
+# Dependencies
+node_modules/
 
+# Build outputs
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Momentum
 .worktrees/
+.momentum/
+
+# Coverage
+coverage/
