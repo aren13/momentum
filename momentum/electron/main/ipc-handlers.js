@@ -158,5 +158,50 @@ export function registerIpcHandlers() {
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // KANBAN BOARD
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  ipcMain.handle('momentum:updateTaskStatus', async (event, { taskId, status }) => {
+    // This would need to update the ROADMAP.md file
+    // For now, return success to allow UI to work
+    // TODO: Implement actual roadmap file update
+    console.log(`Update task ${taskId} to status ${status}`);
+    return { success: true, output: 'Task status updated' };
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONTEXT INSPECTOR
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  ipcMain.handle('momentum:getContext', async () => {
+    // This would fetch context information from the CLI
+    // For now, return mock data to allow UI to work
+    // TODO: Implement actual context retrieval
+    console.log('Get context data');
+    return {
+      success: true,
+      output: JSON.stringify({
+        files: [],
+        totalTokens: 0,
+        tokenLimit: 200000
+      })
+    };
+  });
+
+  ipcMain.handle('momentum:addToContext', async (event, { filePath }) => {
+    // This would add a file to the context
+    // TODO: Implement actual context addition
+    console.log(`Add to context: ${filePath}`);
+    return { success: true, output: 'File added to context' };
+  });
+
+  ipcMain.handle('momentum:removeFromContext', async (event, { filePath }) => {
+    // This would remove a file from the context
+    // TODO: Implement actual context removal
+    console.log(`Remove from context: ${filePath}`);
+    return { success: true, output: 'File removed from context' };
+  });
+
   console.log('IPC handlers registered');
 }

@@ -4,8 +4,11 @@ function Sidebar({ currentView, onNavigate }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'roadmap', label: 'Roadmap', icon: '🗺️' },
+    { id: 'kanban', label: 'Kanban', icon: '📌' },
     { id: 'plans', label: 'Plans', icon: '📋' },
     { id: 'agents', label: 'Agents', icon: '🤖' },
+    { id: 'terminal', label: 'Terminal', icon: '💻' },
+    { id: 'context', label: 'Context', icon: '🔍' },
     { id: 'worktrees', label: 'Worktrees', icon: '🌳' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];

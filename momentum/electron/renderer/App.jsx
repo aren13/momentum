@@ -6,6 +6,9 @@ import Plans from './components/Plans';
 import Agents from './components/Agents';
 import Worktrees from './components/Worktrees';
 import Settings from './components/Settings';
+import KanbanBoard from './components/Kanban/KanbanBoard';
+import TerminalPanel from './components/Terminal/TerminalPanel';
+import ContextInspector from './components/Context/ContextInspector';
 
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -39,10 +42,16 @@ function App() {
         return <Dashboard projectStatus={projectStatus} onRefresh={loadProjectInfo} />;
       case 'roadmap':
         return <Roadmap />;
+      case 'kanban':
+        return <KanbanBoard />;
       case 'plans':
         return <Plans />;
       case 'agents':
         return <Agents />;
+      case 'terminal':
+        return <TerminalPanel />;
+      case 'context':
+        return <ContextInspector />;
       case 'worktrees':
         return <Worktrees />;
       case 'settings':
