@@ -335,7 +335,9 @@ ${answers.scope}
         parallelExecution: true,
         autoCheckpoints: true,
         learningMode: true,
-        smartRetries: true
+        smartRetries: true,
+        useWorktrees: true,
+        autoCleanWorktrees: true
       },
       git: {
         autoCommit: true,

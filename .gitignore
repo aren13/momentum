@@ -1,0 +1,5 @@
+# ae-cc directory (but track planning files)
+ae-cc/*
+!ae-cc/planning/
+
+.worktrees/

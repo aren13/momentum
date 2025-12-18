@@ -103,6 +103,29 @@ export class PlanExecutor {
       ? JSON.parse(readFileSync(configFile, 'utf8'))
       : { workflowMode: 'hybrid' };
 
+    // Create worktree if enabled
+    if (config.features?.useWorktrees) {
+      const { WorktreeManager } = await import('./worktree.js');
+      const wm = new WorktreeManager(this.dir);
+      wm.init();
+      const planName = basename(resolvedPath).replace('-PLAN.md', '');
+      try {
+        const wt = await wm.create(planName);
+        info(`Created worktree: ${wt.name}`);
+        // Execute in worktree context
+        this.executionContext = wt.path;
+      } catch (err) {
+        // Worktree may already exist, check if it's the one we want
+        const existing = wm.get(planName);
+        if (existing) {
+          warning(`Using existing worktree: ${planName}`);
+          this.executionContext = existing.path;
+        } else {
+          throw err;
+        }
+      }
+    }
+
     // Determine execution strategy
     const strategy = options.strategy || this.determineStrategy(this.currentPlan, config);
     info(`Execution strategy: ${strategy}`);
