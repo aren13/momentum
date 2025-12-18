@@ -10,6 +10,7 @@ import inquirer from 'inquirer';
 import figures from 'figures';
 import { success, error, warning, info, header, divider, step, taskStatus, createProgressBar } from '../utils/display.js';
 import { validatePlanFile } from '../utils/validate.js';
+import { WorktreeContext } from './worktree-context.js';
 
 /**
  * Execution strategies
@@ -41,6 +42,7 @@ export class PlanExecutor {
     this.tasks = [];
     this.executionLog = [];
     this.checkpoints = [];
+    this.worktreeContext = new WorktreeContext(dir);
   }
 
   /**
@@ -59,6 +61,15 @@ export class PlanExecutor {
     }
 
     info(`Executing: ${basename(resolvedPath)}`);
+
+    // Show worktree context
+    const wtInfo = this.worktreeContext.formatInfo();
+    if (wtInfo.type === 'worktree') {
+      console.log(chalk.cyan('Worktree:'), chalk.yellow(`${wtInfo.name} (${wtInfo.branch})`));
+      console.log(chalk.dim(`  Path: ${this.worktreeContext.worktreeRoot}`));
+    } else {
+      console.log(chalk.cyan('Repository:'), 'Main');
+    }
     console.log();
 
     // Validate plan
@@ -350,6 +361,13 @@ export class PlanExecutor {
   async executeSequential(plan, config) {
     divider('Sequential Execution');
 
+    // Show execution context
+    const wtInfo = this.worktreeContext.formatInfo();
+    if (wtInfo.type === 'worktree') {
+      console.log(chalk.dim(`Executing in worktree: ${wtInfo.name} (${wtInfo.branch})`));
+      console.log();
+    }
+
     for (let i = 0; i < plan.tasks.length; i++) {
       const task = plan.tasks[i];
 
@@ -624,6 +642,11 @@ Execute this task. Commit changes when complete.
     const completed = this.currentPlan.tasks.filter(t => t.status === TASK_STATE.COMPLETED).length;
     const failed = this.currentPlan.tasks.filter(t => t.status === TASK_STATE.FAILED).length;
 
+    const wtInfo = this.worktreeContext.formatInfo();
+    const contextLine = wtInfo.type === 'worktree'
+      ? `- **Context:** Worktree \`${wtInfo.name}\` (branch: \`${wtInfo.branch}\`)\n`
+      : '';
+
     const summary = `# Execution Summary
 
 > ${this.currentPlan.objective}
@@ -631,7 +654,7 @@ Execute this task. Commit changes when complete.
 ## Results
 
 - **Status:** ${failed === 0 ? '✅ Success' : '⚠️ Completed with errors'}
-- **Duration:** ${Math.round(duration / 1000)}s
+${contextLine}- **Duration:** ${Math.round(duration / 1000)}s
 - **Tasks:** ${completed}/${this.currentPlan.tasks.length} completed
 ${failed > 0 ? `- **Failed:** ${failed} tasks` : ''}
 
@@ -763,7 +786,10 @@ ${this.currentPlan.verificationSteps.map(step => `- [ ] ${step}`).join('\n')}
 
     console.log();
     divider('Summary');
+
+    const wtInfo = this.worktreeContext.formatInfo();
     console.log(`
+  ${chalk.cyan('Context:')} ${wtInfo.type === 'worktree' ? `Worktree: ${wtInfo.name} (${wtInfo.branch})` : 'Main Repository'}
   ${chalk.cyan('Duration:')} ${Math.round(duration / 1000)}s
   ${chalk.cyan('Tasks:')} ${completed}/${this.currentPlan.tasks.length} completed
   ${failed > 0 ? chalk.red(`Failed: ${failed}`) : ''}

@@ -10,6 +10,7 @@ import inquirer from 'inquirer';
 import figures from 'figures';
 import { success, error, warning, info, header, divider } from '../utils/display.js';
 import { hasProject } from '../utils/validate.js';
+import { WorktreeContext } from './worktree-context.js';
 
 /**
  * Context optimization strategies
@@ -26,6 +27,7 @@ export class ContextEngine {
     this.dir = dir;
     this.momentumDir = join(dir, '.momentum');
     this.maxTokens = 180000; // Target context window
+    this.worktreeContext = new WorktreeContext(dir);
   }
 
   /**
@@ -54,6 +56,14 @@ export class ContextEngine {
   async showContextStatus() {
     header('Context Status');
     console.log();
+
+    // Show worktree context if applicable
+    const wtInfo = this.worktreeContext.formatInfo();
+    if (wtInfo.type === 'worktree') {
+      console.log(chalk.cyan('Environment:'), chalk.yellow(wtInfo.display));
+      console.log(chalk.dim(`  Root: ${this.worktreeContext.worktreeRoot}`));
+      console.log();
+    }
 
     const context = await this.loadFullContext();
 
@@ -109,8 +119,28 @@ export class ContextEngine {
       state: null,
       issues: null,
       phases: null,
-      codebase: null
+      codebase: null,
+      worktree: null
     };
+
+    // Add worktree context if applicable
+    if (this.worktreeContext.isWorktree) {
+      const metadata = this.worktreeContext.getMetadata();
+      context.worktree = `# Worktree Context
+
+**Name:** ${metadata.name}
+**Branch:** ${metadata.branch}
+**Root:** ${metadata.root}
+**Main Repository:** ${metadata.mainRepoPath}
+
+${this.worktreeContext.getContextString()}
+`;
+    }
+
+    // Resolve .momentum directory path (may be in main repo or worktree)
+    const momentumDir = this.worktreeContext.isWorktree && this.worktreeContext.mainRepoPath
+      ? join(this.worktreeContext.mainRepoPath, '.momentum')
+      : this.momentumDir;
 
     // Load core files
     const files = {
@@ -121,14 +151,14 @@ export class ContextEngine {
     };
 
     for (const [key, file] of Object.entries(files)) {
-      const path = join(this.momentumDir, file);
+      const path = join(momentumDir, file);
       if (existsSync(path)) {
         context[key] = readFileSync(path, 'utf8');
       }
     }
 
     // Load phase summaries
-    const phasesDir = join(this.momentumDir, 'phases');
+    const phasesDir = join(momentumDir, 'phases');
     if (existsSync(phasesDir)) {
       const summaries = [];
       const phases = readdirSync(phasesDir);
@@ -146,7 +176,7 @@ export class ContextEngine {
     }
 
     // Load codebase context
-    const codebaseDir = join(this.momentumDir, 'codebase');
+    const codebaseDir = join(momentumDir, 'codebase');
     if (existsSync(codebaseDir)) {
       const codebaseFiles = readdirSync(codebaseDir).filter(f => f.endsWith('.md'));
       const codebaseContent = codebaseFiles
@@ -388,7 +418,13 @@ export class ContextEngine {
 Generated: ${timestamp}
 
 ---
+${context.worktree ? `
+## Worktree Context
 
+${context.worktree}
+
+---
+` : ''}
 ## Project Overview
 
 ${context.project || 'No project documentation found.'}
