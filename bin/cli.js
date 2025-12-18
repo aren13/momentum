@@ -28,8 +28,10 @@ const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8
 
 const program = new Command();
 
-// Display banner on startup
-displayBanner(pkg.version);
+// Display banner only for CLI commands (not REPL mode)
+if (process.argv.slice(2).length) {
+  displayBanner(pkg.version);
+}
 
 program
   .name('momentum')
@@ -375,10 +377,12 @@ program
     await pm.installCommands(options);
   });
 
-// Parse and execute
-program.parse();
-
-// Show help if no command provided
+// Start REPL if no command provided, otherwise parse commands
 if (!process.argv.slice(2).length) {
-  displayHelp();
+  // Launch interactive AI assistant
+  const { startRepl } = await import('../lib/repl/index.js');
+  await startRepl({ dir: process.cwd() });
+} else {
+  // Parse and execute CLI commands
+  program.parse();
 }

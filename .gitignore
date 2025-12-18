@@ -30,3 +30,8 @@ Thumbs.db
 
 # Coverage
 coverage/
+
+# Momentum
+.momentum/checkpoints/
+.momentum/analytics/
+*.momentum-backup
