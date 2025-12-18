@@ -4,6 +4,7 @@
 import { execSync, exec } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { FixStrategy } from './fix-strategy.js';
 
 export class QARunner {
   constructor(options = {}) {
@@ -12,6 +13,8 @@ export class QARunner {
     this.checks = options.checks || ['lint', 'typecheck', 'test'];
     this.fixEnabled = options.fixEnabled !== false;
     this.history = [];
+    this.fixStrategy = new FixStrategy({ workDir: this.workDir });
+    this.fixAttempts = [];
   }
 
   /**
@@ -227,6 +230,10 @@ export class QARunner {
     const fixed = [];
 
     for (const failure of failures) {
+      const startTime = Date.now();
+      let fixResult = null;
+
+      // Try simple auto-fix first
       if (failure.fixable && failure.fixCommand) {
         try {
           execSync(failure.fixCommand, {
@@ -235,9 +242,58 @@ export class QARunner {
             stdio: 'pipe'
           });
           fixed.push(failure.type);
+
+          this.fixAttempts.push({
+            checkType: failure.type,
+            strategy: 'simple-auto-fix',
+            success: true,
+            duration: Date.now() - startTime
+          });
+
+          continue;
         } catch (err) {
-          // Fix failed
+          // Simple fix failed, try AI-powered fix
         }
+      }
+
+      // Try AI-powered fix strategy
+      try {
+        const analysis = this.fixStrategy.analyzeError(failure);
+        const fix = await this.fixStrategy.generateFix(analysis);
+        const applyResult = await this.fixStrategy.applyFix(fix);
+
+        if (applyResult.success) {
+          const verification = await this.fixStrategy.verifyFix(fix, failure.type);
+
+          this.fixAttempts.push({
+            checkType: failure.type,
+            strategy: analysis.strategy,
+            success: verification.verified,
+            duration: Date.now() - startTime,
+            explanation: fix.explanation
+          });
+
+          if (verification.verified) {
+            fixed.push(failure.type);
+          }
+        } else {
+          this.fixAttempts.push({
+            checkType: failure.type,
+            strategy: analysis.strategy,
+            success: false,
+            duration: Date.now() - startTime,
+            errors: applyResult.errors
+          });
+        }
+      } catch (err) {
+        // AI fix failed
+        this.fixAttempts.push({
+          checkType: failure.type,
+          strategy: 'ai-fix',
+          success: false,
+          duration: Date.now() - startTime,
+          error: err.message
+        });
       }
     }
 
@@ -311,6 +367,9 @@ export class QARunner {
   generateReport() {
     const lastRun = this.history[this.history.length - 1];
 
+    // Calculate fix statistics
+    const fixStats = this.calculateFixStatistics();
+
     return {
       summary: lastRun?.results.passed ? 'PASSED' : 'FAILED',
       totalIterations: this.history.length,
@@ -319,8 +378,90 @@ export class QARunner {
         iteration: h.iteration,
         passed: h.results.passed,
         failedChecks: h.results.checks.filter(c => !c.passed).map(c => c.type)
-      }))
+      })),
+      fixStatistics: fixStats,
+      fixStrategyStats: this.fixStrategy.getStats()
     };
+  }
+
+  /**
+   * Calculate fix statistics from attempts
+   */
+  calculateFixStatistics() {
+    const stats = {
+      totalAttempts: this.fixAttempts.length,
+      successful: 0,
+      failed: 0,
+      byStrategy: {},
+      byCheckType: {},
+      totalDuration: 0,
+      averageDuration: 0
+    };
+
+    for (const attempt of this.fixAttempts) {
+      // Overall stats
+      if (attempt.success) {
+        stats.successful++;
+      } else {
+        stats.failed++;
+      }
+
+      stats.totalDuration += attempt.duration || 0;
+
+      // By strategy
+      if (!stats.byStrategy[attempt.strategy]) {
+        stats.byStrategy[attempt.strategy] = {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          totalDuration: 0
+        };
+      }
+
+      stats.byStrategy[attempt.strategy].attempted++;
+      if (attempt.success) {
+        stats.byStrategy[attempt.strategy].succeeded++;
+      } else {
+        stats.byStrategy[attempt.strategy].failed++;
+      }
+      stats.byStrategy[attempt.strategy].totalDuration += attempt.duration || 0;
+
+      // By check type
+      if (!stats.byCheckType[attempt.checkType]) {
+        stats.byCheckType[attempt.checkType] = {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0
+        };
+      }
+
+      stats.byCheckType[attempt.checkType].attempted++;
+      if (attempt.success) {
+        stats.byCheckType[attempt.checkType].succeeded++;
+      } else {
+        stats.byCheckType[attempt.checkType].failed++;
+      }
+    }
+
+    // Calculate averages
+    if (stats.totalAttempts > 0) {
+      stats.averageDuration = Math.round(stats.totalDuration / stats.totalAttempts);
+      stats.successRate = ((stats.successful / stats.totalAttempts) * 100).toFixed(1) + '%';
+    } else {
+      stats.successRate = '0%';
+    }
+
+    // Add success rates for each strategy
+    for (const [strategy, data] of Object.entries(stats.byStrategy)) {
+      data.successRate = data.attempted > 0
+        ? ((data.succeeded / data.attempted) * 100).toFixed(1) + '%'
+        : '0%';
+      data.avgDuration = data.attempted > 0
+        ? Math.round(data.totalDuration / data.attempted)
+        : 0;
+    }
+
+    return stats;
   }
 }
 
