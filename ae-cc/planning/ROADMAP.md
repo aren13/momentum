@@ -225,13 +225,13 @@ class MergeResolver {
 - Accessible to non-CLI users
 
 **Deliverables:**
-- [ ] Electron app shell with React frontend
+- [x] Electron app shell with React frontend
 - [ ] Kanban board (Planning → In Progress → Done)
 - [ ] Multi-agent terminal panel (up to 12 live views)
-- [ ] Project dashboard with progress visualization
+- [x] Project dashboard with progress visualization
 - [ ] Context inspector (see what AI knows)
-- [ ] Settings/configuration UI
-- [ ] System tray integration for background monitoring
+- [x] Settings/configuration UI
+- [x] System tray integration for background monitoring
 
 **Technical Stack:**
 ```
@@ -321,7 +321,7 @@ Phase 8: Ideation     ──────┘
 | 4. Memory System | ⏳ Pending | Medium | 0/2 |
 | 5. Merge Resolution | ⏳ Pending | High | 0/2 |
 | 6. Spec Engine | ⏳ Pending | Medium | 0/2 |
-| 7. Electron GUI | ⏳ Pending | High | 0/4 |
+| 7. Electron GUI | 🔄 In Progress | High | 1/4 |
 | 8. Ideation | ⏳ Pending | Low | 0/1 |
 
 ---
