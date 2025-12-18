@@ -4,6 +4,8 @@
 import { spawn, fork } from 'child_process';
 import { EventEmitter } from 'events';
 import { WorktreeManager } from './worktree.js';
+import { AgentBus } from './agent-bus.js';
+import { DependencyResolver } from './dependency-resolver.js';
 
 export class AgentPool extends EventEmitter {
   constructor(options = {}) {
@@ -13,6 +15,8 @@ export class AgentPool extends EventEmitter {
     this.taskQueue = [];
     this.results = new Map();
     this.worktreeManager = null;
+    this.bus = new AgentBus({ persistPath: '.momentum/messages' });
+    this.resolver = new DependencyResolver();
   }
 
   /**
@@ -120,15 +124,119 @@ export class AgentPool extends EventEmitter {
     this.agents.set(taskId, agent);
     this.emit('agent:spawn', { taskId, task });
 
+    // Set up message forwarding for this agent
+    this.bus.on('message', (msg) => {
+      if (msg.to === taskId || msg.to === 'all') {
+        this.emit('agent:message', { taskId, message: msg });
+      }
+    });
+
     return agent;
   }
 
   /**
-   * Distribute tasks across available agents
+   * Broadcast message to all agents
    */
-  async distribute(tasks) {
-    this.addTasks(tasks);
-    return this.start();
+  broadcast(fromAgent, message) {
+    return this.bus.broadcast(fromAgent, message);
+  }
+
+  /**
+   * Send message to specific agent
+   */
+  send(fromAgent, toAgent, message) {
+    return this.bus.send(fromAgent, toAgent, message);
+  }
+
+  /**
+   * Subscribe to messages for agent
+   */
+  onMessage(agentId, callback) {
+    return this.bus.onMessage(agentId, callback);
+  }
+
+  /**
+   * Get messages for agent
+   */
+  getMessages(agentId, options) {
+    return this.bus.getMessages(agentId, options);
+  }
+
+  /**
+   * Get message history
+   */
+  getMessageHistory(limit) {
+    return this.bus.getHistory(limit);
+  }
+
+  /**
+   * Distribute tasks across available agents (dependency-aware)
+   */
+  async distribute(tasks, options = {}) {
+    const respectDependencies = options.dependencies !== false;
+
+    if (respectDependencies && tasks.some(t => t.dependsOn || t.metadata?.dependencies)) {
+      return this.distributeWithDependencies(tasks, options);
+    } else {
+      // Original behavior - no dependency checking
+      this.addTasks(tasks);
+      return this.start();
+    }
+  }
+
+  /**
+   * Distribute tasks respecting dependencies
+   */
+  async distributeWithDependencies(tasks, options = {}) {
+    // Build dependency graph
+    this.resolver.reset();
+    this.resolver.addTasks(tasks);
+
+    // Get execution stages
+    const resolution = this.resolver.resolve();
+
+    this.emit('dependency:resolved', {
+      stages: resolution.stages.length,
+      order: resolution.order
+    });
+
+    // Execute stage by stage
+    const allResults = {};
+
+    for (let i = 0; i < resolution.stages.length; i++) {
+      const stage = resolution.stages[i];
+      const stageTasks = stage.map(taskId =>
+        tasks.find(t => t.id === taskId)
+      );
+
+      this.emit('stage:start', {
+        stage: i + 1,
+        total: resolution.stages.length,
+        tasks: stage,
+        parallel: resolution.parallelizable[i]
+      });
+
+      // Execute this stage (can run in parallel)
+      this.addTasks(stageTasks);
+      const stageResults = await this.start();
+
+      Object.assign(allResults, stageResults);
+
+      this.emit('stage:complete', {
+        stage: i + 1,
+        results: stageResults
+      });
+
+      // Check for failures
+      const failures = Object.values(stageResults).filter(r => !r.success);
+      if (failures.length > 0 && options.stopOnFailure !== false) {
+        throw new Error(
+          `Stage ${i + 1} failed: ${failures.length} task(s) failed`
+        );
+      }
+    }
+
+    return allResults;
   }
 
   /**
