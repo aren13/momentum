@@ -207,6 +207,70 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// MEMORY SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+
+const memoryCommand = program
+  .command('memory')
+  .description('Manage Momentum memory system');
+
+memoryCommand
+  .command('stats')
+  .description('Show memory usage statistics')
+  .action(async () => {
+    const { stats } = await import('../commands/memory.js');
+    await stats();
+  });
+
+memoryCommand
+  .command('export [file]')
+  .description('Export memory to JSON file')
+  .action(async (file) => {
+    const { exportMemory } = await import('../commands/memory.js');
+    await exportMemory(file);
+  });
+
+memoryCommand
+  .command('import <file>')
+  .description('Import memory from JSON file')
+  .option('--force', 'Skip confirmation prompt')
+  .option('--replace', 'Replace existing memory instead of merging')
+  .action(async (file, options) => {
+    const { importMemory } = await import('../commands/memory.js');
+    await importMemory(file, options);
+  });
+
+memoryCommand
+  .command('clear')
+  .description('Clear memory data')
+  .option('--all', 'Clear all memory data')
+  .option('--patterns', 'Clear only patterns')
+  .option('--decisions', 'Clear only decisions')
+  .option('--executions', 'Clear only executions')
+  .option('--files', 'Clear only files')
+  .option('--force', 'Skip confirmation prompt')
+  .action(async (options) => {
+    const { clear } = await import('../commands/memory.js');
+    await clear(options);
+  });
+
+memoryCommand
+  .command('validate')
+  .description('Validate memory schema')
+  .action(async () => {
+    const { validate } = await import('../commands/memory.js');
+    await validate();
+  });
+
+memoryCommand
+  .command('repair')
+  .description('Repair memory schema issues')
+  .action(async () => {
+    const { repair } = await import('../commands/memory.js');
+    await repair();
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════
 // GIT INTEGRATION
 // ═══════════════════════════════════════════════════════════════════════════
 

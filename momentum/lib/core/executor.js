@@ -11,6 +11,9 @@ import figures from 'figures';
 import { success, error, warning, info, header, divider, step, taskStatus, createProgressBar } from '../utils/display.js';
 import { validatePlanFile } from '../utils/validate.js';
 import { WorktreeContext } from './worktree-context.js';
+import { MemoryStore } from './memory-store.js';
+import { PatternLearner } from './pattern-learner.js';
+import { DecisionCache } from './decision-cache.js';
 
 /**
  * Execution strategies
@@ -43,12 +46,20 @@ export class PlanExecutor {
     this.executionLog = [];
     this.checkpoints = [];
     this.worktreeContext = new WorktreeContext(dir);
+
+    // Initialize memory system
+    this.memory = new MemoryStore();
+    this.patternLearner = new PatternLearner(this.memory);
+    this.decisionCache = new DecisionCache(this.memory);
+    this.executionStartTime = null;
   }
 
   /**
    * Execute a plan
    */
   async execute(planPath, options = {}) {
+    this.executionStartTime = Date.now();
+
     header('Execute Plan');
     console.log();
 
@@ -178,11 +189,18 @@ export class PlanExecutor {
       // Commit changes
       await this.commitChanges(`feat: complete ${basename(resolvedPath).replace('-PLAN.md', '')}`);
 
+      // Record execution in memory
+      await this.recordExecutionInMemory(resolvedPath, duration, true);
+
       success('Plan execution complete!');
       this.displayExecutionSummary(duration);
 
     } catch (err) {
       error(`Execution failed: ${err.message}`);
+
+      // Record failed execution in memory
+      const duration = Date.now() - this.executionStartTime;
+      await this.recordExecutionInMemory(resolvedPath, duration, false, [err.message]);
 
       // Create failure checkpoint
       await this.createCheckpoint(`failed-${basename(resolvedPath)}`);
@@ -794,6 +812,79 @@ ${this.currentPlan.verificationSteps.map(step => `- [ ] ${step}`).join('\n')}
   ${chalk.cyan('Tasks:')} ${completed}/${this.currentPlan.tasks.length} completed
   ${failed > 0 ? chalk.red(`Failed: ${failed}`) : ''}
 `);
+  }
+
+  /**
+   * Record execution in memory system
+   */
+  async recordExecutionInMemory(planPath, duration, success, errors = []) {
+    try {
+      // Record execution
+      await this.memory.recordExecution(planPath, duration, success, errors);
+
+      // Learn patterns from successful execution
+      if (success && this.currentPlan) {
+        const execution = {
+          success: true,
+          planPath,
+          duration,
+          filesCreated: this.extractCreatedFiles(),
+          importsAdded: this.extractImports(),
+          testsCreated: this.extractTests(),
+          commitMessage: this.lastCommitMessage
+        };
+
+        await this.patternLearner.learnFromExecution(execution);
+      }
+    } catch (err) {
+      // Memory recording is optional - don't fail execution if it fails
+      console.error(chalk.gray(`Note: Failed to record in memory: ${err.message}`));
+    }
+  }
+
+  /**
+   * Extract created files from execution
+   */
+  extractCreatedFiles() {
+    const files = [];
+
+    if (this.currentPlan && this.currentPlan.tasks) {
+      for (const task of this.currentPlan.tasks) {
+        if (task.files && Array.isArray(task.files)) {
+          files.push(...task.files);
+        }
+      }
+    }
+
+    return files;
+  }
+
+  /**
+   * Extract imports from execution (placeholder)
+   */
+  extractImports() {
+    // Placeholder - would analyze created files for imports
+    return [];
+  }
+
+  /**
+   * Extract tests from execution
+   */
+  extractTests() {
+    const tests = [];
+
+    if (this.currentPlan && this.currentPlan.tasks) {
+      for (const task of this.currentPlan.tasks) {
+        if (task.files && Array.isArray(task.files)) {
+          const testFiles = task.files.filter(f =>
+            f.includes('.test.') || f.includes('.spec.') || f.includes('/tests/')
+          );
+          tests.push(...testFiles);
+        }
+      }
+    }
+
+    return tests;
   }
 }
 
